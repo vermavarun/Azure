@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using Azure;
 using Azure.AI.FormRecognizer;
 using Azure.AI.FormRecognizer.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace PSPL.Invoice
@@ -16,7 +13,7 @@ namespace PSPL.Invoice
     public class pspl_invoice_BlobTrigger
     {
         [FunctionName("pspl_invoice_BlobTrigger")]
-        public async Task Run([BlobTrigger("dev/{name}", Connection = "AzureWebJobsStorage")] Stream myBlob, string name, ILogger log)
+        public async Task Run([BlobTrigger("dev/{name}", Connection = "psplstorage_STORAGE")] Stream myBlob, string name, ILogger log)
         {
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
             await AnalyzeInvoice(myBlob);
@@ -110,7 +107,6 @@ namespace PSPL.Invoice
 
 
         }
-
 
     }
 }
