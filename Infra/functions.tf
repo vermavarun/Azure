@@ -17,4 +17,4 @@ resource "azurerm_linux_function_app" "vverma_linux_function_app" {
 
   site_config {
   }
-}
+} 
