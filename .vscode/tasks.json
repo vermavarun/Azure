@@ -9,7 +9,7 @@
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
-			"type": "shell",
+			"type": "process",
 			"problemMatcher": "$msCompile",
 			"options": {
 				"cwd": "${workspaceFolder}/Functions"
@@ -23,7 +23,7 @@
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
-			"type": "shell",
+			"type": "process",
 			"dependsOn": "clean (functions)",
 			"group": {
 				"kind": "build",
@@ -44,7 +44,7 @@
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
-			"type": "shell",
+			"type": "process",
 			"problemMatcher": "$msCompile",
 			"options": {
 				"cwd": "${workspaceFolder}/Functions"
@@ -60,7 +60,7 @@
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
-			"type": "shell",
+			"type": "process",
 			"dependsOn": "clean release (functions)",
 			"problemMatcher": "$msCompile",
 			"options": {
