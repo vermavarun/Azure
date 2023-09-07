@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using Azure;
 using Azure.AI.FormRecognizer;
 using Azure.AI.FormRecognizer.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace PSPL.Invoice
@@ -16,13 +13,13 @@ namespace PSPL.Invoice
     public class pspl_invoice_BlobTrigger
     {
         [FunctionName("pspl_invoice_BlobTrigger")]
-        public async Task Run([BlobTrigger("dev/{name}", Connection = "AzureWebJobsStorage")] Stream myBlob, string name, ILogger log)
+        public async Task Run([BlobTrigger("dev/{name}", Connection = "psplstorage_STORAGE")] Stream myBlob, string name, ILogger log)
         {
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
-            await AnalyzeInvoice(myBlob);
+            await AnalyzeInvoice(myBlob,log);
         }
 
-        private async Task AnalyzeInvoice(Stream myBlob)
+        private async Task AnalyzeInvoice(Stream myBlob,ILogger log)
         {
             string endpoint = Environment.GetEnvironmentVariable("formRecognizerEndPoint");
             string apiKey = Environment.GetEnvironmentVariable("formRecognizerKey");
@@ -47,7 +44,7 @@ namespace PSPL.Invoice
                     {
                         string merchantName = merchantNameField.Value.AsString();
 
-                        Console.WriteLine($"Merchant Name: '{merchantName}', with confidence {merchantNameField.Confidence}");
+                        log.LogInformation($"Merchant Name: '{merchantName}', with confidence {merchantNameField.Confidence}");
                     }
                 }
 
@@ -57,7 +54,7 @@ namespace PSPL.Invoice
                     {
                         DateTime transactionDate = transactionDateField.Value.AsDate();
 
-                        Console.WriteLine($"Transaction Date: '{transactionDate}', with confidence {transactionDateField.Confidence}");
+                        log.LogInformation($"Transaction Date: '{transactionDate}', with confidence {transactionDateField.Confidence}");
                     }
                 }
 
@@ -67,7 +64,7 @@ namespace PSPL.Invoice
                     {
                         foreach (FormField itemField in itemsField.Value.AsList())
                         {
-                            Console.WriteLine("Item:");
+                            log.LogInformation("Item:");
 
                             if (itemField.Value.ValueType == FieldValueType.Dictionary)
                             {
@@ -79,7 +76,7 @@ namespace PSPL.Invoice
                                     {
                                         string itemName = itemNameField.Value.AsString();
 
-                                        Console.WriteLine($"  Name: '{itemName}', with confidence {itemNameField.Confidence}");
+                                        log.LogInformation($"  Name: '{itemName}', with confidence {itemNameField.Confidence}");
                                     }
                                 }
 
@@ -89,7 +86,7 @@ namespace PSPL.Invoice
                                     {
                                         float itemTotalPrice = itemTotalPriceField.Value.AsFloat();
 
-                                        Console.WriteLine($"  Total Price: '{itemTotalPrice}', with confidence {itemTotalPriceField.Confidence}");
+                                        log.LogInformation($"  Total Price: '{itemTotalPrice}', with confidence {itemTotalPriceField.Confidence}");
                                     }
                                 }
                             }
@@ -103,14 +100,13 @@ namespace PSPL.Invoice
                     {
                         float total = totalField.Value.AsFloat();
 
-                        Console.WriteLine($"Total: '{total}', with confidence '{totalField.Confidence}'");
+                        log.LogInformation($"Total: '{total}', with confidence '{totalField.Confidence}'");
                     }
                 }
             }
 
 
         }
-
 
     }
 }
