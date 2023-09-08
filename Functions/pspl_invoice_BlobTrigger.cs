@@ -1,9 +1,13 @@
+// https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/formrecognizer/Azure.AI.FormRecognizer/samples/V3.1/Sample3_RecognizeReceipts.md
+// https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/formrecognizer/Azure.AI.FormRecognizer/samples/V3.1/Sample1_RecognizeFormContent.md
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Azure;
 using Azure.AI.FormRecognizer;
+using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Azure.AI.FormRecognizer.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
@@ -17,9 +21,100 @@ namespace PSPL.Invoice
         {
             log.LogInformation($"C# Blob trigger function Processed blob\n Name:{name} \n Size: {myBlob.Length} Bytes");
             await AnalyzeInvoice(myBlob,log);
+            await AnalyzeReport(myBlob, log);
         }
 
-        private async Task AnalyzeInvoice(Stream myBlob,ILogger log)
+        private async Task AnalyzeReport(Stream myBlog, ILogger log)
+        {
+
+            string endpoint = Environment.GetEnvironmentVariable("formRecognizerEndPoint");
+            string apiKey = Environment.GetEnvironmentVariable("formRecognizerKey");
+            var credential = new AzureKeyCredential(apiKey);
+            var client = new DocumentAnalysisClient(new Uri(endpoint), credential);
+
+            using var stream = myBlog;
+
+            AnalyzeDocumentOperation operation = await client.AnalyzeDocumentAsync(WaitUntil.Completed, "prebuilt-layout", stream);
+            AnalyzeResult result = operation.Value;
+
+            foreach (DocumentPage page in result.Pages)
+            {
+               log.LogInformation($"Document Page {page.PageNumber} has {page.Lines.Count} line(s), {page.Words.Count} word(s),");
+               log.LogInformation($"and {page.SelectionMarks.Count} selection mark(s).");
+
+                for (int i = 0; i < page.Lines.Count; i++)
+                {
+                    DocumentLine line = page.Lines[i];
+                   log.LogInformation($"  Line {i} has content: '{line.Content}'.");
+
+                   log.LogInformation($"    Its bounding polygon (points ordered clockwise):");
+
+                    for (int j = 0; j < line.BoundingPolygon.Count; j++)
+                    {
+                       log.LogInformation($"      Point {j} => X: {line.BoundingPolygon[j].X}, Y: {line.BoundingPolygon[j].Y}");
+                    }
+                }
+
+                for (int i = 0; i < page.SelectionMarks.Count; i++)
+                {
+                    DocumentSelectionMark selectionMark = page.SelectionMarks[i];
+
+                   log.LogInformation($"  Selection Mark {i} is {selectionMark.State}.");
+                   log.LogInformation($"    Its bounding polygon (points ordered clockwise):");
+
+                    for (int j = 0; j < selectionMark.BoundingPolygon.Count; j++)
+                    {
+                       log.LogInformation($"      Point {j} => X: {selectionMark.BoundingPolygon[j].X}, Y: {selectionMark.BoundingPolygon[j].Y}");
+                    }
+                }
+            }
+
+           log.LogInformation("Paragraphs:");
+
+            foreach (DocumentParagraph paragraph in result.Paragraphs)
+            {
+               log.LogInformation($"  Paragraph content: {paragraph.Content}");
+
+                if (paragraph.Role != null)
+                {
+                   log.LogInformation($"    Role: {paragraph.Role}");
+                }
+            }
+
+            foreach (DocumentStyle style in result.Styles)
+            {
+                // Check the style and style confidence to see if text is handwritten.
+                // Note that value '0.8' is used as an example.
+
+                bool isHandwritten = style.IsHandwritten.HasValue && style.IsHandwritten == true;
+
+                if (isHandwritten && style.Confidence > 0.8)
+                {
+                   log.LogInformation($"Handwritten content found:");
+
+                    foreach (DocumentSpan span in style.Spans)
+                    {
+                       log.LogInformation($"  Content: {result.Content.Substring(span.Index, span.Length)}");
+                    }
+                }
+            }
+
+           log.LogInformation("The following tables were extracted:");
+
+            for (int i = 0; i < result.Tables.Count; i++)
+            {
+                DocumentTable table = result.Tables[i];
+               log.LogInformation($"  Table {i} has {table.RowCount} rows and {table.ColumnCount} columns.");
+
+                foreach (DocumentTableCell cell in table.Cells)
+                {
+                   log.LogInformation($"    Cell ({cell.RowIndex}, {cell.ColumnIndex}) has kind '{cell.Kind}' and content: '{cell.Content}'.");
+                }
+            }
+
+        }
+
+        private async Task AnalyzeInvoice(Stream myBlob, ILogger log)
         {
             string endpoint = Environment.GetEnvironmentVariable("formRecognizerEndPoint");
             string apiKey = Environment.GetEnvironmentVariable("formRecognizerKey");

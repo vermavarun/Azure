@@ -4,7 +4,7 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10000",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "psplstorage_STORAGE": "",
+    "psplstorage_STORAGE": "UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1:10000",
     "formRecognizerEndPoint": "",
     "formRecognizerKey": ""
   }
